@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Chat</title>
+    <!-- Bootstrap 5.0 CSS 링크 추가 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #333; /* 어두운 배경 색상 */
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .bg-dark, .bg-secondary, .list-group-item {
+            background-color: #222 !important; /* 배경색 어둡게 설정 */
+        }
+        .text-white {
+            color: #fff !important; /* 텍스트를 흰색으로 설정 */
+        }
+        .list-group-item a.text-white {
+            text-decoration: none; /* 링크 밑줄 제거 */
+        }
+
+        /* 삭제하기 버튼 스타일 */
+        .btn-danger {
+            background-color: #30080C; /* 삭제하기 버튼 배경색 */
+            color: #fff; /* 삭제하기 버튼 텍스트 색상 */
+            border: 1px solid #30080C; /* 삭제하기 버튼 테두리 색상 */
+        }
+
+        .btn-danger:hover {
+            background-color: #4A0D13; /* 삭제하기 버튼 호버 시 배경색 변경 */
+            border: 1px solid #4A0D13; /* 삭제하기 버튼 호버 시 테두리 색상 변경 */
+        }
+
+        .ms-2 {
+            margin-left: 0.5rem; /* 삭제하기 버튼과 다른 내용 사이의 간격 조절 */
+        }
+    </style>
+</head>
+<body>
+    <?php 
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+        session_start();
+
+        require_once "web_db.php";  # db
+        $conndb = conndb();
+
+        if(isset($_SESSION['userId'])) $userId = $_SESSION['userId'];
+        else $userId=null;
+
+        function makeList($chatId, $chatName, $chatMaster){
+            if(isset($_SESSION['userId'])) $userId = $_SESSION['userId'];
+            else $userId = null;
+            
+            // href="./deleteRoom.php?chatId='.$chatId.'"
+            $myRoom = '';
+            if($chatMaster == $userId) {
+                $myRoom = '<a href="#" onclick="f_deleteRoom(\''.$chatName.'\', \''.$chatId.'\')" class="btn btn-danger btn-sm ms-2">삭제하기</a>';
+            }
+        
+            $listStr = '
+            <li class="list-group-item">
+                <a href="./chatRoom.phtml?chatId='.$chatId.'&chatName='.$chatName.'"  class="text-white text-decoration-none">
+                    <strong>'.$chatName.'</strong> --- ['.$chatMaster.']'
+                .$myRoom.
+                '
+                </a>
+            </li>
+            ';
+            return $listStr;
+        }
+    ?>
+    <header class="bg-dark text-white text-center py-4">
+        <h1><a href="./main.phtml" class="text-white text-decoration-none">Translation Chat</a></h1>
+    </header>
+    <nav class="bg-secondary text-center py-2">
+        <?php
+            if($userId == '' || $userId == null){
+                echo '
+                    <a href="./join.phtml" class="text-white text-decoration-none mr-4">회원가입</a>
+                    <a href="./login.phtml" class="text-white text-decoration-none mr-4">로그인</a>
+                    <!--<a href="./loginNotUser.phtml" class="text-white text-decoration-none mr-4">비회원 시작</a>-->
+                ';
+            }
+            else{
+                echo '
+                    <a href="./userInfo.phtml" class="text-white text-decoration-none mr-4">['.$userId.']</a>
+                    <a href="./logout.php" class="text-white text-decoration-none mr-4">로그아웃</a>
+                    <a href="./mkChat.phtml" class="text-white text-decoration-none mr-4">채팅방 만들기</a>
+                ';
+            }
+        ?>
+        <a href="./translation_list.phtml" class="text-white text-decoration-none">번역 지원언어</a>
+    </nav>
+    <div class="container mt-4">
+        <h2 class="mb-3">공개 채팅방 목록</h2>
+        <ul class="list-group">
+            <?php
+                $sqlStr = "SELECT * FROM chatRoom "
+                    ."INNER JOIN userChatLink "
+                    ."ON chatRoom.id = userChatLink.roomId "
+                    ."WHERE chatRoom.openState = 1";
+
+                $result = mysqli_query($conndb, $sqlStr);
+                while($row = mysqli_fetch_row($result)){
+                    printf(makeList($row[0], $row[1], $row[3]));
+                }
+            ?>
+        </ul>
+    </div>
+    
+    <div class="container mt-4">
+        <h2 class="mb-3">개인 채팅방 목록</h2>
+        <ul class="list-group">
+            <?php
+                $sqlStr = "SELECT * FROM chatRoom "
+                    ."INNER JOIN userChatLink "
+                    ."ON chatRoom.id = userChatLink.roomId "
+                    ."WHERE userChatLink.userId = '".$userId."' "
+                    ."AND chatRoom.openState = 0";
+
+                $result = mysqli_query($conndb, $sqlStr);
+                while($row = mysqli_fetch_row($result)){
+                    printf(makeList($row[0], $row[1], $row[3]));
+                }
+            ?>
+        </ul>
+    </div>
+    
+    <div class="container mt-4">
+        <h2 class="mb-3">본인이 만든 채팅방 목록</h2>
+        <ul class="list-group">
+            <?php
+                $sqlStr = "SELECT * FROM chatRoom "
+                    ."WHERE masterId = '".$userId."' ";
+
+                $result = mysqli_query($conndb, $sqlStr);
+                while($row = mysqli_fetch_row($result)){
+                    printf(makeList($row[0], $row[1], $row[3]));
+                }
+            ?>
+        </ul>
+    </div>
+
+    <!-- Bootstrap 5.0 스크립트 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/js/bootstrap.min.js"></script>
+    <script language="javascript">
+        function f_deleteRoom(chatName, chatId){
+            const langChangeState = confirm("선택한 방: ["+chatName+"] \n방을 삭제하시겠습니까?");
+            if (langChangeState) {
+                const form = document.createElement('form');
+                form.setAttribute("METHOD", "POST");
+                form.setAttribute("ACTION", "./deleteChatroom.php");
+
+                const data1 = document.createElement('input');
+                data1.setAttribute("type", "hidden");
+                data1.setAttribute("name", "chatId");
+                data1.setAttribute("value", chatId);
+
+                form.appendChild(data1);
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                alert("제거 취소!");
+            }
+        }
+    </script>
+</body>
+</html>

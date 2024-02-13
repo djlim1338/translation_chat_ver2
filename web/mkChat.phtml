@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채팅방 만들기</title>
+    <!-- 부트스트랩 5.0 CSS 링크 추가 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 사용자 정의 CSS 스타일링 */
+        body {
+            background-color: #222;
+            color: #fff;
+        }
+        .form-container {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-label{
+            color: #fff;
+        }
+        .form-control {
+            color: #000;
+        }
+        .btn_jnc {
+            background-color: #343a40; /* 어두운 배경색 */
+            border: none;
+            color: #fff;
+        }
+        .btn_jnc:hover{
+            background-color: #212529; /* 마우스 호버 시 더 어둡게 변경 */
+        }
+    </style>
+</head>
+<body>
+    <?php
+        session_start();
+        $userId = $_SESSION['userId'];
+        if($userId == '' || $userId == null){
+            header("location:./main.phtml");
+        }
+    ?>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="form-container">
+                    <h2 class="text-center">채팅방 정보</h2>
+                    <form id="mkChatForm" method="POST" action="./mkChat_process.php">
+                        <div class="mb-3">
+                            <label for="chatRoomName" class="form-label">채팅방 이름</label>
+                            <input type="text" class="form-control" id="chatRoomName" name="chatRoomName" placeholder="채팅방 이름 입력">
+                        </div>
+                        <div class="mb-3">
+                            <input type="checkbox" id="openState" name="openState">
+                            <label for="openState" class="form-label">비공개여부 (선택시 비공개방으로 생성)</label>
+                        </div>
+                        <button type="button" class="btn btn_jnc btn-primary btn-block" onclick="mkChat()">생성</button>
+                        <button type="button" class="btn btn_jnc btn-cancel btn-block" onclick="go_main()">취소</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 부트스트랩 5.0 스크립트 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/js/bootstrap.min.js"></script>
+    <script language="javascript">
+        const chatRoomName = document.getElementById("chatRoomName");
+        const openState = document.getElementById("openState");
+        const mkChatForm = document.getElementById("mkChatForm");
+
+        function mkChat() {
+            const chatRoomNameValue = chatRoomName.value;
+            const openStateValue = openState.value;
+            
+            if(chatRoomNameValue == '' || chatRoomNameValue == null){
+                alert("채팅방 이름을 입력하세요.");
+                chatRoomName.focus();
+                return;
+            }
+
+            mkChatForm.submit();
+        }
+
+        function go_main() {
+            location.href = "./main.phtml";
+        }
+    </script>
+</body>
+</html>

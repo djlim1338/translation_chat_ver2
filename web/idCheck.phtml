@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이디 중복확인</title>
+    <!-- 부트스트랩 5.0 CSS 링크 추가 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 사용자 정의 CSS 스타일링 */
+        body {
+            background-color: #222;
+            color: #fff;
+            padding: 20px;
+        }
+        div {
+            background-color: #333;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+        }
+        h3 {
+            color: #fff;
+        }
+        input[type="button"] {
+            background-color: #343a40; /* 어두운 배경색 */
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            margin-right: 10px;
+        }
+        input[type="button"]:hover {
+            background-color: #212529; /* 마우스 호버 시 더 어둡게 변경 */
+        }
+    </style>
+</head>
+<body>
+    <?php
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+
+        require_once "web_db.php";  # db
+        $conndb = conndb();
+
+        $userId = $_GET["username"];
+
+        $sqlStr = "SELECT * FROM user WHERE id='$userId'";
+        $result = mysqli_query($conndb, $sqlStr);
+        $userRowNum = mysqli_num_rows($result);
+        echo '<input id="userIdHidden" type="hidden" value="'.$userId.'">';
+    ?>
+    <div>
+        <h6>
+            <?php
+                if($userRowNum){
+                    echo "아이디[".$userId."] 이미 존재하는 아이디입니다!";
+                }
+                else{
+                    echo "아이디[".$userId."] 사용 가능합니다!";
+                }
+            ?>
+        </h6>
+    </div>
+    <div>
+        <?php
+            if(!$userRowNum) echo '<input type="button" value="사용하기" onclick="clickBtn(1)">';
+        ?>
+        <input type="button" value="취소" onclick="clickBtn(0)">
+    </div>
+    <!-- 부트스트랩 5.0 스크립트 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/js/bootstrap.min.js"></script>
+    <script language="javascript">
+        const userIdHidden = document.getElementById("userIdHidden");
+        var openerDuplicate = opener.document.getElementById("duplicate");
+        var openeruserIdHidden = opener.document.getElementById("username_hidden");
+        
+
+        function clickBtn(state){
+            if(state){
+                openerDuplicate.value="검사완료";
+                openeruserIdHidden.value=userIdHidden.value;
+                window.close();
+            }else{
+                window.close();
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+

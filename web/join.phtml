@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <!-- 부트스트랩 5.0 CSS 링크 추가 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 사용자 정의 CSS 스타일링 */
+        body {
+            background-color: #222;
+            color: #fff;
+        }
+        .form-container {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-label{
+            color: #fff;
+        }
+        .form-control {
+            color: #000;
+        }
+        .btn_jnc {
+            background-color: #343a40; /* 어두운 배경색 */
+            border: none;
+            color: #fff;
+        }
+        .btn_jnc:hover{
+            background-color: #212529; /* 마우스 호버 시 더 어둡게 변경 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="form-container">
+                    <h2 class="text-center">회원가입</h2>
+                    <form id="joinForm" method="POST" action="./join_process.php">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">사용자 이름 (ID)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="username" name="username" placeholder="사용자 이름 입력" onchange="userIdChange()">
+                                <input type="button" class="btn btn-secondary" id="duplicate"  onclick="idCheck()" value="중복검사"></input>
+                                <input type="hidden" id="username_hidden" name="username_hidden">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password1" class="form-label">비밀번호</label>
+                            <input type="password" class="form-control" id="password1" name="password1" placeholder="비밀번호 입력">
+                        </div>
+                        <div class="mb-3">
+                            <input type="password" class="form-control" id="password2" name="password2" placeholder="같은 비밀번호 입력">
+                        </div>
+                        <button type="button" class="btn btn_jnc btn-primary btn-block" onclick="btn_join()">가입</button>
+                        <button type="button" class="btn btn_jnc btn-cancel btn-block" onclick="go_main()">취소</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 부트스트랩 5.0 스크립트 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/js/bootstrap.min.js"></script>
+    <script language="javascript">
+        const inputId = document.getElementById("username");
+        const inputIdHidden = document.getElementById("username_hidden");
+        const inputPw1 = document.getElementById("password1");
+        const inputPw2 = document.getElementById("password2");
+        const joinForm = document.getElementById("joinForm");
+        const duplicate = document.getElementById("duplicate");
+
+
+        function userIdChange(){  // 사용자 이름 변경 감지시
+            const inputIdValue = inputId.value;
+            const inputIdHiddenValue = inputIdHidden.value;
+            const duplicateValue = duplicate.value;
+
+            if(inputIdValue == inputIdHiddenValue) duplicate.value="검사완료";
+            else duplicate.value="중복검사";
+        }
+
+        function idCheck() {  // 아이디 중복체크
+            const duplicateValue = duplicate.value;
+
+            if(duplicateValue=="검사완료"){
+                alert("중복 확인을 이미 완료했습니다.\n변경하려면 입력값을 바꿔주세요.");
+                return;
+            }
+
+            const inputIdValue = inputId.value;
+
+            if(inputIdValue == '' || inputIdValue == null){
+                alert("사용자 이름을 입력하세요.");
+                inputId.focus();
+                return;
+            }
+
+            const idCheckUrl = "./idCheck.phtml?username="+inputIdValue;
+            const idCheckUrlEnco = encodeURI(idCheckUrl);
+            const idCheckWin = window.open(idCheckUrlEnco, "아이디 중복확인", "width=400,height=200,menubar=no,toolbar=no,location=no");
+        }
+
+        function btn_join() {
+            const inputIdValue = inputId.value;
+            const inputPw1Value = inputPw1.value;
+            const inputPw2Value = inputPw2.value;
+            userIdChange();  // 혹시 모를 상황에 대비하여 값 변경 다시 확인
+            const duplicateValue = duplicate.value;
+
+            if(inputIdValue == '' || inputIdValue == null){
+                alert("사용자 이름을 입력하세요.");
+                inputId.focus();
+                return;
+            }
+
+            if(inputPw1Value == '' || inputPw1Value == null){
+                alert("비밀번호를 입력해주세요.");
+                inputPw1.focus();
+                return;
+            }
+
+            if(inputPw1Value != inputPw2Value){
+                alert("두 비밀번호가 다릅니다!\n둘다 같은 비밀번호를 입력해주세요.");
+                inputPw1.focus();
+                return;
+            }
+
+            if(duplicateValue!="검사완료"){
+                alert("사용자 이름 중복검사를 완료해야합니다.");
+                duplicate.focus();
+                return;
+            }
+            
+            joinForm.submit();
+        }
+
+        function go_main() {
+            location.href = "./main.phtml";
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if(e.key == "Enter" || e.keyCode == "13"){
+                btn_join();
+            }
+        })
+    </script>
+</body>
+</html>

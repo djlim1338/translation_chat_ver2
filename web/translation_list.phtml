@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 어두운 테마 스타일 */
+        body {
+            background-color: #333; /* 배경색 */
+            color: #fff; /* 텍스트 색상 */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* 중앙 정렬 */
+            height: 100vh;
+            margin: 0;
+        }
+        table {
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #222; /* 테이블 헤더 배경색 */
+        }
+        tr:hover {
+            background-color: #555; /* 마우스 호버 시 배경색 변경 */
+            cursor: pointer; /* 커서 모양 변경 */
+        }
+        .main-button {
+            text-decoration: none;
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 0;
+            width: 100%; /* 테이블 넓이에 맞춤 */
+            text-align: center; /* 가운데 정렬 */
+            font-weight: bold;
+        }
+        .main-button:hover {
+            background-color: #0056b3;
+        }
+        .myCode {
+            color: #00FF00;
+        }
+    </style>
+    <?php 
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+        session_start();
+    
+        require_once "web_db.php";  # db
+        $conndb = conndb();
+    ?>
+    <title>Translation List</title>
+</head>
+<body>
+    <a class="main-button" href='./main.phtml'>메인으로</a>
+    <div>
+        <h1>지원 언어</h1>
+        <h6>언어를 클릭하면 설정을 변경하실 수 있습니다.</h6>
+        <?php
+            if(isset($_GET['error'])){
+                $error = $_GET['error'];
+                if($error == 1){
+                    echo "언어 변경 오류!";
+                }
+                else{
+                    echo "언어 변경 성공!";
+                }
+            }
+        ?>
+        <table>
+            <tr>
+                <th>Alpha Code</th>
+                <th>Name (en)</th>
+                <th>Name</th>
+            </tr>
+            <?php
+                $sqlStr = "SELECT * FROM languageCode";
+                $result = mysqli_query($conndb, $sqlStr);
+                while($row = mysqli_fetch_row($result)){
+                    if(isset($_SESSION['langCode']) && $row[0] == $_SESSION['langCode']) echo "<tr class='myCode' onclick='f_changeLanguage(\"".$row[0]."\", \"".$row[2]."\")'>";
+                    else echo "<tr onclick='f_changeLanguage(\"".$row[0]."\", \"".$row[2]."\")'>";
+                    echo "<td>".$row[0]."</td>";  // Alpha code
+                    echo "<td>".$row[1]."</td>";  // en name
+                    echo "<td>".$row[2]."</td>";  // name
+                    echo "</tr>";
+                }
+            ?>
+            <tr>
+                <td colspan=2>총 지원언어 수: </td>
+                <td>999</td>
+            </tr>
+        </table>
+    </div>
+    <a class="main-button" href='./main.phtml'>메인으로</a>
+    <script language="javascript">
+        function f_changeLanguage(langCode, langName){
+            const langChangeState = confirm("선택한 언어: ["+langCode+"] "+langName+" \n설정을 변경하시겠습니까?");
+            if (langChangeState) {
+                const form = document.createElement('form');
+                form.setAttribute("METHOD", "POST");
+                form.setAttribute("ACTION", "./translation_process.php");
+
+                const data1 = document.createElement('input');
+                data1.setAttribute("type", "hidden");
+                data1.setAttribute("name", "langCode");
+                data1.setAttribute("value", langCode);
+
+                form.appendChild(data1);
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                alert("변경 취소!");
+            }
+        }
+    </script>
+</body>
+</html>

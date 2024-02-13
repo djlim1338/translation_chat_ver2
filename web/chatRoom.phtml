@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+        session_start();
+
+        require_once "web_db.php";  # db
+        $conndb = conndb();
+        if(isset($_SESSION['userId'])) $userId = $_SESSION['userId'];
+        else header("location:./main.phtml?error=1");
+        
+        if(isset($_GET['chatId']))$chatId = $_GET['chatId'];
+        else header("location:./main.phtml?error=1");
+
+        if(isset($_GET['chatName']))$roomName = $_GET['chatName'];
+        else header("location:./main.phtml?error=1");
+
+        $sqlStr = "SELECT * FROM chatRoom WHERE id='".$chatId."' AND name='".$roomName."'";
+        $result = mysqli_query($conndb, $sqlStr);
+        $rowCount = mysqli_num_rows($result);
+        if($rowCount==0) header("location:./main.phtml?error=1");
+    ?>
+    <title><?php echo $roomName; ?></title>
+    <!-- 부트스트랩 5.0 CSS 링크 추가 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 사용자 정의 CSS 스타일링 */
+        body {
+            background-color: #222;
+            color: #fff;
+        }
+        .form-container {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-label{
+            color: #fff;
+        }
+        .form-control {
+            color: #000;
+        }
+        .btn_jnc {
+            background-color: #343a40; /* 어두운 배경색 */
+            border: none;
+            color: #fff;
+        }
+        .btn_jnc:hover{
+            background-color: #212529; /* 마우스 호버 시 더 어둡게 변경 */
+        }
+        /* 채팅 메시지 표시 영역 스타일링 */
+        #chat-messages {
+            height:350px;
+            max-height: 350px; /* 최대 높이 지정 */
+            overflow-y: auto; /* 세로 스크롤바 활성화 */
+            border: 1px solid #555; /* 테두리 스타일 지정 */
+            padding: 10px;
+        }
+        /* 기타 스타일링 */
+        .mt-5 {
+            margin-top: 5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="form-container">
+                    <button type="button" class="btn btn_jnc btn-cancel btn-block" onclick="f_goMain()">메인으로</button>
+                    <h2 class="text-center"><?php echo $roomName; ?></h2>
+                    <!-- 채팅 메시지 표시 영역 -->
+                    <div id="chat-messages" class="mb-3"></div>
+
+                    <!-- 이미지 업로드 폼 -->
+                    <form id="file-upload-form">
+                        <div class="form-group">
+                            <label for="fileData" class="text-white">파일:</label>
+                            <input type="file" class="form-control-file" id="fileData" accept="image/*">
+                        </div>
+                    </form>
+
+                    <!-- 텍스트 메시지 입력 폼 -->
+                    <form id="text-message-form" class="mt-3">
+                        <div class="form-group">
+                            <textarea class="form-control" id="textData" placeholder="메시지 입력"></textarea>
+                        </div>
+                    </form>
+                    
+                    <button type="button" class="btn btn_jnc btn-primary btn-block" onclick="f_sendData()">보내기</button>
+                    <button type="button" class="btn btn_jnc btn-cancel btn-block" onclick="f_dataClear()">취소</button>
+                    <input type="hidden" id="userId" value="<?php echo $userId; ?>">
+                    <input type="hidden" id="chatId" value="<?php echo $chatId; ?>">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 부트스트랩 5.0 스크립트 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha2/dist/js/bootstrap.min.js"></script>
+    <script language="javascript">
+        var ws = new WebSocket('ws://203.250.133.86:30088'); // 서버 주소에 맞게 수정
+        const hiddenUserId = document.getElementById("userId");
+        const hiddenChatId = document.getElementById("chatId");
+
+        // 소켓 접속이 되면 호출되는 함수
+        ws.onopen = function(message){
+            const userId = hiddenUserId.value;
+            const chatId = hiddenChatId.value;
+            const firstData = userId+","+chatId;
+            console.log(firstData);
+            ws.send(firstData);
+        };
+
+        // 소켓 접속이 끝나면 호출되는 함수
+        ws.onclose = function(message){
+            console.log("server disconnect...");
+        };
+
+        // 소켓 통신중 오류가 발생하면 호출되는 함수
+        ws.onerror = function(message){
+            console.log("error...");
+        };
+
+        var msg_data = "";  // 쪼개진 데이터 합치는 변수
+        var receive_state = false;  // 쪼개진 데이터 수신중인 상태, T=쪼개진 데이터 결합중, F=수신 대기중
+        var dataLength = 0;  // 데이터 길이
+
+        // 메시지 server -> client
+        ws.onmessage = function(message){  // 내가 했던거 수정
+            //console.log("message: "+message);
+            if(!receive_state){
+                const msgFristData = message.data
+                dataLength = parseInt(msgFristData.split(",")[0]);
+                //console.log("length: "+dataLength);
+                msg_data = msgFristData.slice(msgFristData.split(",")[0].length+1)
+                receive_state = true;
+            }
+            else{
+                msg_data = msg_data + message.data;
+            }
+            //console.log("data: "+ msg_data);
+            //console.log("length: "+ msg_data.length);
+            if(msg_data.length == dataLength){
+                var inData = JSON.parse(msg_data); // string이 돼서 json형식으로 바꿈.
+                var userId = inData['user_id']; // 메시지 전송자 ID
+                var dataType = inData['data_type']; // 메시지 데이터
+                var data = inData['data']; // 메시지 데이터
+                //console.log(inData);
+                f_appendChat(userId, data, dataType);
+                receive_state = false;
+            }
+        };
+
+        var inputImage = document.getElementById("fileData");  // 이미지 입력
+        var inputText = document.getElementById("textData");  // 메시지 입력
+
+        function f_appendChat(sender, data, dataType){
+            const chatMessages = document.getElementById('chat-messages');  // 채팅방
+            const messageDiv = document.createElement('div');  // 추가 div
+            messageDiv.className = 'message';
+            var messageContent=null;
+            switch(dataType){
+                case "text":
+                    var messageContent = data;
+                    break;
+                case "image":
+                    //const imageUrl = URL.createObjectURL(data);
+                    var messageContent = `<img src="${data}" alt="Image" class="img-fluid">`;
+                    break;
+            }
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${messageContent}`;
+            chatMessages.appendChild(messageDiv);
+            // 새 메시지가 추가될 때마다 스크롤을 아래로 이동
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function f_formatFilter(fileData){
+            var fileDataArray = fileData.split(',')[0];
+            fileDataArray = fileDataArray.split(';')[0];
+            const fileExtension = fileDataArray.split('/')[1];
+            console.log(fileExtension);
+            const allowedExtensions = ['jpg', 'jpeg', 'png'];
+            return allowedExtensions.includes(fileExtension);
+        }
+
+        function f_sendChunk(data) {
+            var chunkSize = 1024; // 조정 가능
+            sendData = (data.length).toString()+','+data;
+            let offset = 0;
+            let chunk = '';
+            while(offset < sendData.length){
+                if(sendData.length <= chunkSize) chunkSize = sendData.length;
+                chunk = sendData.slice(offset, offset + chunkSize);
+                ws.send(chunk);
+                offset += chunkSize;
+                //console.log("chunk"+chunk);
+                // 다음 청크를 보내기 전에 잠시 대기 (선택 사항)
+                //setTimeout(f_sendChunk, 10);
+            }
+            console.log("송신완료");
+        }
+
+        function f_sendData(){
+            const inputTextValue = inputText.value.trim();
+            const inputFileValue = inputImage.files[0];
+
+            if(inputTextValue){  // 문자열 올라온 경우
+                f_sendChunk(inputTextValue);
+                inputText.value = '';
+            }
+
+            if (inputFileValue) {  // 파일 올라온 경우
+                const reader = new FileReader();
+                reader.readAsDataURL(inputFileValue);
+
+                reader.onload = () => {
+                    if(f_formatFilter(reader.result)){
+                        f_sendChunk(reader.result);
+                    }
+                    else{
+                        alert("보낼 수 있는 파일이 아닙니다.\n지원형식: jpg, jpeg, png");
+                    }
+                };
+                inputImage.value = '';
+            }
+        }
+
+        function f_goMain(){
+            location.href = "./main.phtml";
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if(e.key == "Enter" || e.keyCode == "13"){
+                f_sendData();
+            }
+        })
+    </script>
+</body>
+</html>
+
